@@ -1,10 +1,12 @@
 from flask import Flask, request, jsonify, send_file
+from flask_cors import CORS  # Import CORS
 import yfinance as yf
 import csv
 import os
 from news_fetcher import get_news
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 # Route to fetch stock data and show it in JSON format
 @app.route('/stock')
