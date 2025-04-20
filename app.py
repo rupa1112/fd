@@ -1,120 +1,84 @@
-import logging
-import yfinance as yf
 from flask import Flask, jsonify, send_file
+import yfinance as yf
 import csv
-from io import StringIO
+from io import BytesIO
+import time
+import logging
 
 app = Flask(__name__)
-
-# Stock tickers as a space-separated string
-tickers_string = """
-MANAPPURAM.NS      
-MRPL.NS      
-MANKIND.NS      
-MARICO.NS      
-MARUTI.NS      
-MASTEK.NS      
-MFSL.NS      
-MAXHEALTH.NS      
-MAZDOCK.NS      
-METROBRAND.NS      
-METROPOLIS.NS      
-MINDACORP.NS      
-MSUMI.NS      
-MOTILALOFS.NS      
-MPHASIS.NS      
-MCX.NS      
-MUTHOOTFIN.NS      
-NATCOPHARM.NS      
-NBCC.NS      
-NCC.NS      
-NHPC.NS      
-NLCINDIA.NS      
-NMDC.NS      
-NSLNISP.NS      
-NTPC.NS      
-NH.NS      
-NATIONALUM.NS      
-NAVINFLUOR.NS      
-NESTLEIND.NS      
-NETWEB.NS      
-NETWORK18.NS      
-NEWGEN.NS      
-NAM-INDIA.NS      
-NUVAMA.NS      
-NUVOCO.NS      
-OBEROIRLTY.NS      
-ONGC.NS      
-OIL.NS      
-OLECTRA.NS      
-PAYTM.NS      
-OFSS.NS      
-POLICYBZR.NS      
-PCBL.NS      
-PIIND.NS      
-PNBHOUSING.NS      
-PNCINFRA.NS      
-PTCIL.NS      
-PVRINOX.NS      
-PAGEIND.NS      
-PATANJALI.NS      
-PERSISTENT.NS      
-PETRONET.NS      
-PFIZER.NS      
-PHOENIXLTD.NS      
-PIDILITIND.NS      
-PEL.NS      
-PPLPHARMA.NS      
-POLYMED.NS      
-
-"""
-
-# Split the string into a list of tickers
-stock_list = tickers_string.split()
-
-# Setup logging
 logging.basicConfig(level=logging.INFO)
 
-# Function to fetch data for a single stock
+# Ticker list
+tickers_string = """  
+360ONE.NS	   
+3MINDIA.NS	   
+ABB.NS	   
+ACC.NS	   
+AIAENG.NS	   
+APLAPOLLO.NS	   
+AUBANK.NS	   
+AADHARHFC.NS	   
+AARTIIND.NS	   
+AAVAS.NS	   
+ABBOTINDIA.NS	   
+ACE.NS	   
+ADANIENSOL.NS	   
+ADANIENT.NS	   
+ADANIGREEN.NS	   
+ADANIPORTS.NS	   
+ADANIPOWER.NS	   
+ATGL.NS	   
+AWL.NS	   
+ABCAPITAL.NS	   
+ABFRL.NS	   
+ABREL.NS	   
+ABSLAMC.NS	   
+AEGISLOG.NS	   
+ """
+stock_list = tickers_string.split()
+
+# Function to fetch single stock data
 def get_stock_data(ticker):
     try:
         stock = yf.Ticker(ticker)
         info = stock.info
         return [
-            ticker.replace(".NS", ""),  # Clean up NSE ticker symbols
-            info.get("longName", "N/A"),
-            info.get("currentPrice", "N/A"),
-            info.get("marketCap", "N/A"),
-            info.get("trailingPE", "N/A"),
-            info.get("trailingEps", "N/A"),
-            info.get("returnOnEquity", "N/A"),
-            info.get("sector", "N/A")
+            ticker.replace(".NS", ""),
+            info.get("longName", ""),
+            info.get("currentPrice", ""),
+            info.get("marketCap", ""),
+            info.get("trailingPE", ""),
+            info.get("trailingEps", ""),
+            info.get("returnOnEquity", ""),
+            info.get("sector", "")
         ]
     except Exception as e:
         logging.error(f"Error fetching data for {ticker}: {e}")
-        return [ticker, "Error", str(e)]
+        return [ticker.replace(".NS", ""), "ERROR", "", "", "", "", "", ""]
 
-# Route to generate and download CSV for all stocks
+# Route to download CSV
 @app.route('/download_csv')
 def download_csv():
     try:
-        # Prepare the data for all stocks
-        data = [['Symbol', 'Name', 'Price', 'Market Cap', 'P/E', 'EPS', 'ROE', 'Sector']]  # CSV header
+        data = [['Symbol', 'Name', 'Price', 'Market Cap', 'P/E', 'EPS', 'ROE', 'Sector']]
         
-        for ticker in stock_list:
+        for i, ticker in enumerate(stock_list):
             stock_data = get_stock_data(ticker)
             data.append(stock_data)
+            time.sleep(0.5)  # Sleep to reduce rate-limiting risk
 
-        # Create in-memory CSV
-        output = StringIO()
+        # Save to BytesIO instead of a file
+        output = BytesIO()
         writer = csv.writer(output)
         writer.writerows(data)
-
-        # Seek to the beginning of the StringIO buffer
         output.seek(0)
 
-        # Send the CSV file for download
-        return send_file(output, mimetype='text/csv', as_attachment=True, download_name='stock_data.csv')
+        return send_file(
+            output,
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name='stocks_fundamentals.csv'
+        )
 
     except Exception as e:
         logging.error(f"Error generating CSV: {e}")
