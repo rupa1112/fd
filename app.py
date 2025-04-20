@@ -15,15 +15,26 @@ def get_stock_data(ticker):
     try:
         stock = yf.Ticker(ticker)
         info = stock.info
+
+        price = info.get("currentPrice", 0)
+        market_cap = info.get("marketCap", 0)
+        trailing_pe = info.get("trailingPE", 0)
+        eps = info.get("trailingEps", 0)
+        roe = info.get("returnOnEquity", 0)
+        sector = info.get("sector", "")
+
+        # Format market cap in Indian Crores
+        market_cap_crore = round(market_cap / 1e7, 2)  # 1 crore = 10^7
+
         return [
             ticker.replace(".NS", ""),
             info.get("longName", ""),
-            info.get("currentPrice", ""),
-            info.get("marketCap", ""),
-            info.get("trailingPE", ""),
-            info.get("trailingEps", ""),
-            info.get("returnOnEquity", ""),
-            info.get("sector", "")
+            round(price, 2),
+            f"{market_cap_crore} Cr",  # Example: 1256.78 Cr
+            round(trailing_pe, 2) if trailing_pe else "—",
+            round(eps, 2) if eps else "—",
+            f"{round(roe * 100, 2)}%" if roe else "—",
+            sector
         ]
     except Exception as e:
         logging.error(f"Error fetching data for {ticker}: {e}")
