@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, send_file
+from flask import Flask, send_file, jsonify
 import yfinance as yf
 import csv
 from io import BytesIO
@@ -6,38 +6,11 @@ import time
 import logging
 
 app = Flask(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.ERROR)
 
-# Ticker list
-tickers_string = """  
-360ONE.NS	   
-3MINDIA.NS	   
-ABB.NS	   
-ACC.NS	   
-AIAENG.NS	   
-APLAPOLLO.NS	   
-AUBANK.NS	   
-AADHARHFC.NS	   
-AARTIIND.NS	   
-AAVAS.NS	   
-ABBOTINDIA.NS	   
-ACE.NS	   
-ADANIENSOL.NS	   
-ADANIENT.NS	   
-ADANIGREEN.NS	   
-ADANIPORTS.NS	   
-ADANIPOWER.NS	   
-ATGL.NS	   
-AWL.NS	   
-ABCAPITAL.NS	   
-ABFRL.NS	   
-ABREL.NS	   
-ABSLAMC.NS	   
-AEGISLOG.NS	   
- """
+tickers_string = """ABREL.NS USHAMART.NS VGUARD.NS VIPIND.NS DBREALTY.NS VTL.NS ECLERX.NS"""  # sample subset
 stock_list = tickers_string.split()
 
-# Function to fetch single stock data
 def get_stock_data(ticker):
     try:
         stock = yf.Ticker(ticker)
@@ -54,35 +27,34 @@ def get_stock_data(ticker):
         ]
     except Exception as e:
         logging.error(f"Error fetching data for {ticker}: {e}")
-        return [ticker.replace(".NS", ""), "ERROR", "", "", "", "", "", ""]
+        return [ticker.replace(".NS", ""), "Error", "", "", "", "", "", ""]
 
-# Route to download CSV
 @app.route('/download_csv')
 def download_csv():
     try:
-        data = [['Symbol', 'Name', 'Price', 'Market Cap', 'P/E', 'EPS', 'ROE', 'Sector']]
-        
+        buffer = BytesIO()
+        writer = csv.writer(buffer := BytesIO())
+        header = ['Symbol', 'Name', 'Price', 'Market Cap', 'P/E', 'EPS', 'ROE', 'Sector']
+        rows = [header]
+
         for i, ticker in enumerate(stock_list):
-            stock_data = get_stock_data(ticker)
-            data.append(stock_data)
-            time.sleep(0.5)  # Sleep to reduce rate-limiting risk
+            rows.append(get_stock_data(ticker))
+            time.sleep(1.5)  # Slow down to avoid Yahoo rate-limiting
 
-        # Save to BytesIO instead of a file
-        output = BytesIO()
-        writer = csv.writer(output)
-        writer.writerows(data)
-        output.seek(0)
+        # Write CSV as text and encode to bytes
+        text_buffer = "\n".join([",".join(map(str, row)) for row in rows])
+        buffer.write(text_buffer.encode('utf-8'))
+        buffer.seek(0)
 
-        return send_file(
-            output,
-            mimetype='text/csv',
-            as_attachment=True,
-            download_name='stocks_fundamentals.csv'
-        )
+        return send_file(buffer, mimetype='text/csv', download_name='stocks_fundamentals.csv', as_attachment=True)
 
     except Exception as e:
         logging.error(f"Error generating CSV: {e}")
         return jsonify({"error": str(e)}), 500
+
+@app.route('/')
+def home():
+    return "Welcome to the Stock Fundamentals API!"
 
 if __name__ == '__main__':
     app.run(debug=True)
