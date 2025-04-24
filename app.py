@@ -47,10 +47,12 @@ def get_auth_token():
 @app.route("/greeks", methods=["POST"])
 def option_greeks():
     data = request.json
+    print(f"📥 Received data: {data}")
     name = data.get("name")
     expiry = data.get("expirydate")  # ✅ This was the bug
 
     if not name or not expiry:
+        print("❌ Missing name or expirydate")
         return jsonify({"error": "Missing 'name' or 'expirydate' in request"}), 400
 
     auth_token = get_auth_token()
