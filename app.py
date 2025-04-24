@@ -6,16 +6,15 @@ import pyotp
 import requests
 
 app = Flask(__name__)
-# Allow ONLY your Blogger URL for CORS
 CORS(app, resources={r"/*": {"origins": [
     "https://5763583527682878366_24f73d2dae53a6ddc3170a5d91e05d139e40a93a.blogspot.com"
 ]}})
 
-# SmartAPI credentials
-api_key = os.environ.get("SMARTAPI_KEY")  # Ensure the API key is fetched from env variables
-client_code = os.environ.get("CLIENT_CODE")  # Fetch client code from environment
-pin = os.environ.get("PIN")  # Fetch PIN from environment
-totp_token = os.environ.get('TOTP_TOKEN')  # Fetch the TOTP token from environment variables
+# SmartAPI credentials from environment variables
+api_key = os.environ.get("SMARTAPI_KEY")
+client_code = os.environ.get("CLIENT_CODE")
+pin = os.environ.get("PIN")
+totp_token = os.environ.get('TOTP_TOKEN')
 
 def get_auth_token():
     if not totp_token or not api_key or not client_code or not pin:
@@ -24,21 +23,26 @@ def get_auth_token():
     try:
         totp = pyotp.TOTP(totp_token)
         otp = totp.now()
-        print(f"Generated OTP: {otp}")  # Log the OTP for debugging purposes
+        print(f"Generated OTP: {otp}")
     except Exception as e:
         print(f"Error generating OTP: {e}")
         return jsonify({"error": "Error generating OTP"}), 500
 
-    smartApi = SmartConnect(api_key)
     try:
-        # Attempt to generate the session using provided credentials
+        smartApi = SmartConnect(api_key=api_key)
         session = smartApi.generateSession(client_code, pin, otp)
-        auth_token = session['data']['jwtToken']
-        print("Auth Token successfully fetched")
-        return auth_token
+
+        if "data" in session and "jwtToken" in session["data"]:
+            auth_token = session['data']['jwtToken']
+            print("✅ Auth Token fetched successfully")
+            return auth_token
+        else:
+            print("❌ Session response missing jwtToken:", session)
+            return jsonify({"error": "Invalid session response", "details": session}), 500
+
     except Exception as e:
-        print(f"Error fetching auth token: {e}")
-        return jsonify({"error": "Failed to fetch auth token"}), 500
+        print(f"❌ Error in generateSession(): {e}")
+        return jsonify({"error": "Failed to fetch auth token", "details": str(e)}), 500
 
 @app.route("/greeks", methods=["POST"])
 def option_greeks():
@@ -46,12 +50,13 @@ def option_greeks():
     name = data.get("name")
     expiry = data.get("expiry")
 
-    # Fetch the auth token for the API request
+    if not name or not expiry:
+        return jsonify({"error": "Missing 'name' or 'expiry' in request"}), 400
+
     auth_token = get_auth_token()
 
-    # Check if auth_token is valid
     if isinstance(auth_token, tuple):
-        return auth_token  # Return error response if auth_token is invalid
+        return auth_token  # Return the error response
 
     headers = {
         "X-PrivateKey": api_key,
@@ -65,19 +70,24 @@ def option_greeks():
     }
 
     url = "https://apiconnect.angelbroking.in/rest/secure/angelbroking/marketData/v1/optionGreek"
+
     try:
-        # Make the API request to AngelOne
         response = requests.post(url, json=payload, headers=headers)
-        print(f"Raw Response from AngelOne API: {response.text}")
+        print(f"🔄 Response Status: {response.status_code}")
+        print(f"🧾 Raw Response: {response.text}")
 
         if response.status_code == 200:
             return jsonify(response.json())
         else:
-            print(f"Error fetching data: {response.text}")
-            return jsonify({"error": "Failed to fetch data from AngelOne API", "status_code": response.status_code, "response": response.text}), response.status_code
+            return jsonify({
+                "error": "Failed to fetch data from AngelOne API",
+                "status_code": response.status_code,
+                "response": response.text
+            }), response.status_code
+
     except Exception as e:
-        print(f"Error in API request: {e}")
-        return jsonify({"error": "Error making request to AngelOne API"}), 500
+        print(f"❌ Exception during API request: {e}")
+        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
