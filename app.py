@@ -1,9 +1,9 @@
+import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from SmartApi import SmartConnect
 import pyotp
 import requests
-
 
 app = Flask(__name__)
 # Allow ONLY your Blogger URL for CORS
@@ -15,11 +15,26 @@ CORS(app, resources={r"/*": {"origins": [
 api_key = "your_api_key"
 client_code = "your_client_code"
 pin = "your_pin"
-totp_token = "your_totp_token"
+totp_token = os.environ.get('TOTP_TOKEN')  # Fetch the TOTP token from environment variables
 
 def get_auth_token():
+    if not totp_token:
+        return jsonify({"error": "TOTP token is missing"}), 400
+
+    # Debug log: Print the TOTP token to ensure it's correctly passed
+    print(f"TOTP Token being used: {totp_token}")
+    
+    # Test the TOTP generation
+    try:
+        totp = pyotp.TOTP(totp_token)
+        otp = totp.now()
+        print(f"Generated OTP: {otp}")  # This prints the OTP generated from the TOTP
+    except Exception as e:
+        print(f"Error generating OTP: {e}")
+        return jsonify({"error": "Error generating OTP"}), 500
+
+    # Proceed to get the session token using SmartAPI
     smartApi = SmartConnect(api_key)
-    otp = pyotp.TOTP(totp_token).now()
     session = smartApi.generateSession(client_code, pin, otp)
     return session['data']['jwtToken']
 
