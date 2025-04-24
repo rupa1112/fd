@@ -6,6 +6,10 @@ import requests
 
 
 app = Flask(__name__)
+# Allow ONLY your Blogger URL for CORS
+CORS(app, resources={r"/*": {"origins": [
+    "https://5763583527682878366_24f73d2dae53a6ddc3170a5d91e05d139e40a93a.blogspot.com"
+]}})
 
 # SmartAPI credentials
 api_key = "your_api_key"
