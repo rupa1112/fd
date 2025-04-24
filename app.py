@@ -1,9 +1,9 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from flask import Flask, request, jsonify
 from SmartApi import SmartConnect
 import pyotp
 import requests
+
 
 app = Flask(__name__)
 
