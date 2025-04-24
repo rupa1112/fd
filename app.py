@@ -48,15 +48,14 @@ def get_auth_token():
 def option_greeks():
     data = request.json
     name = data.get("name")
-    expiry = data.get("expiry")
+    expiry = data.get("expirydate")  # ✅ This was the bug
 
     if not name or not expiry:
-        return jsonify({"error": "Missing 'name' or 'expiry' in request"}), 400
+        return jsonify({"error": "Missing 'name' or 'expirydate' in request"}), 400
 
     auth_token = get_auth_token()
-
     if isinstance(auth_token, tuple):
-        return auth_token  # Return the error response
+        return auth_token
 
     headers = {
         "X-PrivateKey": api_key,
