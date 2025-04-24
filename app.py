@@ -21,10 +21,8 @@ def get_auth_token():
     if not totp_token:
         return jsonify({"error": "TOTP token is missing"}), 400
 
-    # Debug log: Print the TOTP token to ensure it's correctly passed
     print(f"TOTP Token being used: {totp_token}")
     
-    # Test the TOTP generation
     try:
         totp = pyotp.TOTP(totp_token)
         otp = totp.now()
@@ -33,7 +31,6 @@ def get_auth_token():
         print(f"Error generating OTP: {e}")
         return jsonify({"error": "Error generating OTP"}), 500
 
-    # Proceed to get the session token using SmartAPI
     smartApi = SmartConnect(api_key)
     session = smartApi.generateSession(client_code, pin, otp)
     return session['data']['jwtToken']
@@ -59,7 +56,14 @@ def option_greeks():
 
     url = "https://apiconnect.angelone.in/rest/secure/angelbroking/marketData/v1/optionGreek"
     response = requests.post(url, json=payload, headers=headers)
-    return jsonify(response.json())
+
+    # Log the raw response
+    print(f"Raw Response from AngelOne API: {response.text}")
+
+    if response.status_code == 200:
+        return jsonify(response.json())
+    else:
+        return jsonify({"error": "Failed to fetch data from AngelOne API", "status_code": response.status_code, "response": response.text}), response.status_code
 
 if __name__ == "__main__":
     app.run(debug=True)
