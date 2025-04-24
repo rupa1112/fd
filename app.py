@@ -15,6 +15,7 @@ api_key = os.environ.get("SMARTAPI_KEY")
 client_code = os.environ.get("CLIENT_CODE")
 pin = os.environ.get("PIN")
 totp_token = os.environ.get('TOTP_TOKEN')
+print(f"API Key: {api_key}, Client Code: {client_code}, PIN: {pin}, TOTP Token: {totp_token}")
 
 def get_auth_token():
     if not totp_token or not api_key or not client_code or not pin:
