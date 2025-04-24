@@ -10,7 +10,7 @@ CORS(app, resources={r"/*": {"origins": [
     "https://5763583527682878366_24f73d2dae53a6ddc3170a5d91e05d139e40a93a.blogspot.com"
 ]}})
 
-# ✅ Fetch credentials from environment
+# Load credentials from environment
 api_key = os.environ.get("SMARTAPI_KEY")
 client_code = os.environ.get("SMARTAPI_CLIENT_CODE")
 pin = os.environ.get("SMARTAPI_PIN")
@@ -26,17 +26,17 @@ def get_auth_token():
         otp = totp.now()
         print(f"🔑 Generated OTP: {otp}")
     except Exception as e:
-        print(f"❌ Error generating OTP from TOTP: {e}")
+        print(f"❌ OTP generation failed: {e}")
         return None
 
     try:
-        smartApi = SmartConnect(api_key)
-        session = smartApi.generateSession(client_code, pin, otp)
+        smart_api = SmartConnect(api_key)
+        session = smart_api.generateSession(client_code, pin, otp)
         jwt_token = session['data']['jwtToken']
         print("✅ Auth Token successfully fetched.")
         return jwt_token
     except Exception as e:
-        print(f"❌ Failed to authenticate with SmartAPI: {e}")
+        print(f"❌ Auth Token fetch failed: {e}")
         return None
 
 @app.route("/greeks", methods=["POST"])
@@ -46,13 +46,14 @@ def option_greeks():
     expiry = data.get("expiry")
     print(f"📩 Received Request with name: {name}, expiry: {expiry}")
 
-    auth_token = get_auth_token()
-    if not auth_token:
-        return jsonify({"error": "Authentication failed. Check logs for details."}), 401
+    token = get_auth_token()
+    if not token:
+        return jsonify({"error": "Authentication failed"}), 401
 
     headers = {
+        "Authorization": f"Bearer {token}",
         "X-PrivateKey": api_key,
-        "Authorization": f"Bearer {auth_token}",
+        "X-ClientCode": client_code,
         "Content-Type": "application/json"
     }
 
@@ -62,18 +63,27 @@ def option_greeks():
     }
 
     url = "https://apiconnect.angelone.in/rest/secure/angelbroking/marketData/v1/optionGreek"
-    response = requests.post(url, json=payload, headers=headers)
+    
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        print(f"📨 Raw Response from AngelOne API: {response.text}")
 
-    print(f"📨 Raw Response from AngelOne API: {response.text}")
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({
+                "error": "Failed to fetch data from AngelOne API",
+                "status_code": response.status_code,
+                "response": response.text
+            }), response.status_code
 
-    if response.status_code == 200:
-        return jsonify(response.json())
-    else:
-        return jsonify({
-            "error": "Failed to fetch data from AngelOne API",
-            "status_code": response.status_code,
-            "response": response.text
-        }), response.status_code
+    except Exception as e:
+        print(f"❌ Request error: {e}")
+        return jsonify({"error": "Request failed"}), 500
+
+@app.route("/", methods=["GET"])
+def home():
+    return "✅ AngelOne Greeks API is running."
 
 if __name__ == "__main__":
     app.run(debug=True)
