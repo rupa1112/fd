@@ -7,7 +7,7 @@ import requests
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": [
-    "https://5763583527682878366_24f73d2dae53a6ddc3170a5d91e05d139e40a93a.blogspot.com"
+    "https://www.niftyfifty.in/p/option-greeks-viewer-stock-name-expiry-e.html"
 ]}})
 
 # SmartAPI credentials from environment variables
