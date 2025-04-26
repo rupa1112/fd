@@ -65,58 +65,54 @@ def get_auth_token():
         print(f"❌ Error in generateSession(): {e}")
         return jsonify({"error": "Failed to fetch auth token", "details": str(e)}), 500
 
-@app.route("/greeks", methods=["POST"])
-def option_greeks():
+@app.route("/top_gainers_losers", methods=["POST"])
+def get_top_gainers_losers():
     data = request.json
-    print(f"📥 Received data: {data}")
-    name = data.get("name")
-    expiry = data.get("expirydate")
+    datatype = data.get("datatype")
+    expirytype = data.get("expirytype")
 
-    if not name or not expiry:
-        print("❌ Missing 'name' or 'expirydate' in request")
-        return jsonify({"error": "Missing 'name' or 'expirydate' in request"}), 400
+    if not datatype or not expirytype:
+        return jsonify({"error": "Missing 'datatype' or 'expirytype' in request"}), 400
 
     auth_token_response = get_auth_token()
     if isinstance(auth_token_response, tuple):
         return auth_token_response
     jwt_token = auth_token_response
 
-    if jwt_token:
-        print(f"✅ Using raw jwtToken for greeks request: {jwt_token[:20]}...")
-        headers = {
-            "X-PrivateKey": api_key,
-            "Authorization": f"{jwt_token}",
-            "Content-Type": "application/json"
-        }
-    else:
-        print("❌ Could not retrieve auth token for greeks request")
-        return jsonify({"error": "Could not retrieve auth token for greeks request"}), 500
+    if not jwt_token:
+        return jsonify({"error": "Could not retrieve auth token"}), 500
+
+    headers = {
+        "X-PrivateKey": api_key,
+        "Authorization": f"{jwt_token}",
+        "Content-Type": "application/json"
+    }
 
     payload = {
-        "name": name,
-        "expirydate": expiry
+        "datatype": datatype,
+        "expirytype": expirytype
     }
-    print(f"📤 Sending payload to AngelOne API: {payload}") # Log the payload
+    print(f"📤 Sending payload for top gainers/losers: {payload}")
 
-    url = "https://apiconnect.angelone.in/rest/secure/angelbroking/marketData/v1/optionGreek" # Ensure correct URL
+    url = "https://apiconnect.angelone.in/rest/secure/angelbroking/marketData/v1/gainersLosers"
 
     try:
         response = requests.post(url, json=payload, headers=headers)
-        print(f"🔄 Response Status from AngelOne: {response.status_code}")
-        print(f"🧾 Raw Response from AngelOne: {response.text}")
+        print(f"🔄 Response Status from AngelOne (Gainers/Losers): {response.status_code}")
+        print(f"🧾 Raw Response from AngelOne (Gainers/Losers): {response.text}")
 
         if response.status_code == 200:
             return jsonify(response.json())
         else:
             return jsonify({
-                "error": "Failed to fetch data from AngelOne API",
+                "error": "Failed to fetch top gainers/losers data",
                 "status_code": response.status_code,
                 "response": response.text
             }), response.status_code
 
     except Exception as e:
-        print(f"❌ Exception during API request: {e}")
-        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
+        print(f"❌ Exception during top gainers/losers request: {e}")
+        return jsonify({"error": "Internal Server Error during top gainers/losers fetch", "details": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
