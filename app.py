@@ -79,18 +79,17 @@ def option_greeks():
     auth_token_response = get_auth_token()
     if isinstance(auth_token_response, tuple):
         return auth_token_response
-    session_data = auth_token_response
+    jwt_token = auth_token_response # Now this directly holds the JWT string
 
-    if "data" in session_data and "jwtToken" in session_data["data"]:
-        jwt_token = session_data['data']['jwtToken']
+    if jwt_token: # Check if we successfully got the token
         print(f"✅ Using raw jwtToken for greeks request: {jwt_token[:20]}...")
         headers = {
             "X-PrivateKey": api_key,
-            "Authorization": f"{jwt_token}", # Removed "Bearer " prefix
+            "Authorization": f"{jwt_token}", # Removed "Bearer " prefix as per last attempt
             "Content-Type": "application/json"
         }
     else:
-        print("❌ Could not retrieve jwtToken from session for greeks request")
+        print("❌ Could not retrieve auth token for greeks request")
         return jsonify({"error": "Could not retrieve auth token for greeks request"}), 500
 
 
