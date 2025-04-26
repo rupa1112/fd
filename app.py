@@ -70,15 +70,18 @@ def option_greeks():
     data = request.json
     print(f"📥 Received data: {data}")
     name = data.get("name")
-    expiry = data.get("expirydate")  # ✅ This was the bug
+    expiry = data.get("expirydate")
 
     if not name or not expiry:
-        print("❌ Missing name or expirydate")
+        print("❌ Missing 'name' or 'expirydate' in request")
         return jsonify({"error": "Missing 'name' or 'expirydate' in request"}), 400
 
-    auth_token = get_auth_token()
-    if isinstance(auth_token, tuple):
-        return auth_token
+    # Fetch a new auth token right before making the API call
+    auth_token_response = get_auth_token()
+    if isinstance(auth_token_response, tuple):
+        return auth_token_response
+    auth_token = auth_token_response
+    print(f"✅ Fetched auth token for greeks request: {auth_token[:20]}...")
 
     headers = {
         "X-PrivateKey": api_key,
@@ -91,12 +94,12 @@ def option_greeks():
         "expirydate": expiry
     }
 
-    url = "https://apiconnect.angelone.in/rest/secure/angelbroking/marketData/v1/optionGreek"
+    url = "https://apiconnect.angelone.in/rest/secure/angelbroking/marketData/v1/optionGreek" # Ensure this is the correct 'angelone.in' URL in your actual code
 
     try:
         response = requests.post(url, json=payload, headers=headers)
-        print(f"🔄 Response Status: {response.status_code}")
-        print(f"🧾 Raw Response: {response.text}")
+        print(f"🔄 Response Status from AngelOne: {response.status_code}")
+        print(f"🧾 Raw Response from AngelOne: {response.text}")
 
         if response.status_code == 200:
             return jsonify(response.json())
