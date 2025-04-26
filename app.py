@@ -76,25 +76,30 @@ def option_greeks():
         print("❌ Missing 'name' or 'expirydate' in request")
         return jsonify({"error": "Missing 'name' or 'expirydate' in request"}), 400
 
-    # Fetch a new auth token right before making the API call
     auth_token_response = get_auth_token()
     if isinstance(auth_token_response, tuple):
         return auth_token_response
-    auth_token = auth_token_response
-    print(f"✅ Fetched auth token for greeks request: {auth_token[:20]}...")
+    session_data = auth_token_response
 
-    headers = {
-        "X-PrivateKey": api_key,
-        "Authorization": f"Bearer {auth_token}",
-        "Content-Type": "application/json"
-    }
+    if "data" in session_data and "jwtToken" in session_data["data"]:
+        jwt_token = session_data['data']['jwtToken']
+        print(f"✅ Using raw jwtToken for greeks request: {jwt_token[:20]}...")
+        headers = {
+            "X-PrivateKey": api_key,
+            "Authorization": f"{jwt_token}", # Removed "Bearer " prefix
+            "Content-Type": "application/json"
+        }
+    else:
+        print("❌ Could not retrieve jwtToken from session for greeks request")
+        return jsonify({"error": "Could not retrieve auth token for greeks request"}), 500
+
 
     payload = {
         "name": name,
         "expirydate": expiry
     }
 
-    url = "https://apiconnect.angelone.in/rest/secure/angelbroking/marketData/v1/optionGreek" # Ensure this is the correct 'angelone.in' URL in your actual code
+    url = "https://apiconnect.angelone.in/rest/secure/angelbroking/marketData/v1/optionGreek" # Ensure correct URL
 
     try:
         response = requests.post(url, json=payload, headers=headers)
