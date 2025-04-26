@@ -83,9 +83,15 @@ def get_top_gainers_losers():
         return jsonify({"error": "Could not retrieve auth token"}), 500
 
     headers = {
+        "Authorization": f"Bearer {jwt_token}",  # <-- Important "Bearer" here
         "X-PrivateKey": api_key,
-        "Authorization": f"{jwt_token}",
-        "Content-Type": "application/json"
+        "X-UserType": "USER",
+        "X-SourceID": "WEB",
+        "X-ClientLocalIP": "127.0.0.1",
+        "X-ClientPublicIP": "127.0.0.1",
+        "X-MACAddress": "00:00:00:00:00:00",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
     }
 
     payload = {
@@ -100,7 +106,7 @@ def get_top_gainers_losers():
         response = requests.post(url, json=payload, headers=headers)
         print(f"🔄 Response Status from AngelOne (Gainers/Losers): {response.status_code}")
         print(f"🧾 Raw Response from AngelOne (Gainers/Losers): {response.text}")
-        print(f"Headers from AngelOne Response (Gainers/Losers): {response.headers}") # Log the headers
+        print(f"Headers from AngelOne Response (Gainers/Losers): {response.headers}")
 
         if response.status_code == 200:
             return jsonify(response.json())
@@ -109,7 +115,7 @@ def get_top_gainers_losers():
                 "error": "Failed to fetch top gainers/losers data",
                 "status_code": response.status_code,
                 "response": response.text,
-                "headers": dict(response.headers) # Include headers in the error response
+                "headers": dict(response.headers)
             }), response.status_code
 
     except Exception as e:
