@@ -84,8 +84,9 @@ def get_top_gainers_losers():
 
     headers = {
         "X-PrivateKey": api_key,
-        "Authorization": f"{jwt_token}",
-        "Content-Type": "application/json"
+        "Authorization": f"Bearer {jwt_token}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
     }
 
     payload = {
