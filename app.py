@@ -91,7 +91,7 @@ def option_greeks():
         "expirydate": expiry
     }
 
-    url = "https://apiconnect.angelbroking.in/rest/secure/angelbroking/marketData/v1/optionGreek"
+    url = "https://apiconnect.angelone.in/rest/secure/angelbroking/marketData/v1/optionGreek"
 
     try:
         response = requests.post(url, json=payload, headers=headers)
