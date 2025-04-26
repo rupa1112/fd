@@ -82,12 +82,17 @@ def get_top_gainers_losers():
     if not jwt_token:
         return jsonify({"error": "Could not retrieve auth token"}), 500
 
-    headers = {
-        "X-PrivateKey": api_key,
-        "Authorization": f"Bearer {jwt_token}",
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-    }
+   if jwt_token.startswith("Bearer "):
+    auth_header = jwt_token
+else:
+    auth_header = f"Bearer {jwt_token}"
+
+headers = {
+    "X-PrivateKey": api_key,
+    "Authorization": auth_header,
+    "Content-Type": "application/json",
+    "Accept": "application/json"
+}
 
     payload = {
         "datatype": datatype,
