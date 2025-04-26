@@ -100,6 +100,7 @@ def get_top_gainers_losers():
         response = requests.post(url, json=payload, headers=headers)
         print(f"🔄 Response Status from AngelOne (Gainers/Losers): {response.status_code}")
         print(f"🧾 Raw Response from AngelOne (Gainers/Losers): {response.text}")
+        print(f"Headers from AngelOne Response (Gainers/Losers): {response.headers}") # Log the headers
 
         if response.status_code == 200:
             return jsonify(response.json())
@@ -107,7 +108,8 @@ def get_top_gainers_losers():
             return jsonify({
                 "error": "Failed to fetch top gainers/losers data",
                 "status_code": response.status_code,
-                "response": response.text
+                "response": response.text,
+                "headers": dict(response.headers) # Include headers in the error response
             }), response.status_code
 
     except Exception as e:
