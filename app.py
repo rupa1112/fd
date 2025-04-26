@@ -19,6 +19,7 @@ print(f"API Key: {api_key}, Client Code: {client_code}, PIN: {pin}, TOTP Token: 
 
 def get_auth_token():
     if not totp_token or not api_key or not client_code or not pin:
+        print("❌ Missing required credentials")
         return jsonify({"error": "Missing required credentials (API Key, Client Code, PIN, TOTP token)"}), 400
 
     try:
@@ -26,8 +27,27 @@ def get_auth_token():
         otp = totp.now()
         print(f"Generated OTP: {otp}")
     except Exception as e:
-        print(f"Error generating OTP: {e}")
+        print(f"❌ Error generating OTP: {e}")
         return jsonify({"error": "Error generating OTP"}), 500
+
+    try:
+        smartApi = SmartConnect(api_key=api_key)
+        print("Attempting to generate session...")
+        session = smartApi.generateSession(client_code, pin, otp)
+        print(f"Session API Response: {session}")
+
+        if "data" in session and "jwtToken" in session["data"]:
+            auth_token = session['data']['jwtToken']
+            print("✅ Auth Token fetched successfully:", auth_token[:20] + "...") # Print first 20 chars for brevity
+            return auth_token
+        else:
+            print("❌ Session response missing jwtToken:", session)
+            return jsonify({"error": "Invalid session response", "details": session}), 500
+
+    except Exception as e:
+        print(f"❌ Error in generateSession(): {e}")
+        return jsonify({"error": "Failed to fetch auth token", "details": str(e)}), 500
+
 
     try:
         smartApi = SmartConnect(api_key=api_key)
