@@ -38,7 +38,7 @@ def get_auth_token():
 
         if "data" in session and "jwtToken" in session["data"]:
             auth_token = session['data']['jwtToken']
-            print("✅ Auth Token fetched successfully:", auth_token[:20] + "...") # Print first 20 chars for brevity
+            print("✅ Auth Token fetched successfully:", auth_token[:20] + "...")
             return auth_token
         else:
             print("❌ Session response missing jwtToken:", session)
